@@ -44,8 +44,18 @@ Output:
 It was the season of evaluation in the second half of the year. I am subjected to be promoted next year. But it is not decided clearly. As the promotion every year is always competitive. The team members who are working as same year as me also want to be promoted. I don't like competition, becausee it is so stressful moment. So I normally avoided meeting the situations as possible. But this year, I have received good evaluations. So I didn't want to miss this good chance. As I get high grades, it will be easy to achieve it among the competitors. I also did my best this year to get a high level.
 
 **Output:**  
-It was the season of evaluation in the second half of the year.  
-I am subject to being promoted next year.  
+It was the season of evaluation in the second half of the year. 
+I am subject to being promoted next year. 
+But it is not clearly decided. 
+Promotions are always competitive every year. 
+The team members who joined the company in the same year as me also want to be promoted. 
+I don't like competition, because it is such a stressful time. 
+So I normally avoid meeting the situations as much as possible. 
+But this year, I have received good evaluations. 
+So I didn't want to miss this good chance. 
+As I get high grades, it will be easy to achieve it among the competitors. 
+I also did my best this year to get a high level.
+
 # Appendix B — Correction Examples
 
 | Edit Type | Original | 4oComp | FTComp |
