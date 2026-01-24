@@ -70,6 +70,9 @@ I also did my best this year to get a high level.
 
 # Appendix C — Metric generation pipeline
 
+This script provides the implementation for calculating the multi-dimensional metric profile used in this study. It utilizes the ERRANT framework for linguistic edit classification and $F_{0.5}$ alignment, and the Transformers library for Perplexity (PPL) calculation.
+
+```python
 import pandas as pd
 import torch
 import errant
@@ -77,15 +80,19 @@ from nltk.translate.gleu_score import sentence_gleu
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 
 # 1. SETUP: Tools and Models
+# Load ERRANT for linguistic edit categorization
 annotator = errant.load('en')
+
+# Define device for torch (GPU if available)
 device = "cuda" if torch.cuda.is_available() else "cpu"
-# GPT-2 is the research standard for calculating zero-shot Perplexity
+
+# Load GPT-2: The research standard for calculating reference-free Perplexity
 ppl_model = GPT2LMHeadModel.from_pretrained("gpt2").to(device)
 ppl_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
 
 # 2. DATA INPUT
-# 'best_model_out' = The FTComp Fine-tuned model
-# 'target_model_out' = The configuration being tested (e.g., 4o Simple)
+# 'best_model_out'   = The FTComp Fine-tuned model (N=2,617) acting as pseudo-gold
+# 'target_model_out' = The configuration being evaluated (e.g., 4o Simple)
 data = {
     'original': ["I have learn about his attitude"],
     'best_model_out': ["I have learned about his attitude"],
@@ -125,6 +132,8 @@ def get_f05_and_edits(orig, ref, hyp):
     
     prec = tp / (tp + fp) if (tp + fp) > 0 else 0
     rec = tp / (tp + fn) if (tp + fn) > 0 else 0
+    
+    # Standard F0.5 formula (Beta=0.5)
     f05 = (1.25 * prec * rec) / (0.25 * prec + rec) if (0.25 * prec + rec) > 0 else 0
     
     # Qualitative: Atomic Edit Classification
@@ -149,6 +158,10 @@ for idx, row in df.iterrows():
     
     for e in edits:
         print(f"{e['orig']:<20} | {e['type']:<10} | {e['cor']}")
+
+# Display Quantitative Summary
+print("\n--- Final Metrics ---")
+print(df[['GLEU', 'PPL', 'F0.5']].round(4))
 
 # Appendix D — Qualitative Examples
 
