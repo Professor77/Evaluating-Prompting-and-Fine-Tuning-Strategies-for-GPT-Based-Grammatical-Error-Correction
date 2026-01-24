@@ -162,6 +162,7 @@ for idx, row in df.iterrows():
 # Display Quantitative Summary
 print("\n--- Final Metrics ---")
 print(df[['GLEU', 'PPL', 'F0.5']].round(4))
+```
 
 # Appendix D — Qualitative Examples
 
@@ -177,8 +178,3 @@ print(df[['GLEU', 'PPL', 'F0.5']].round(4))
 | U:CONJ | I will keep going my work and study.<br>and I have learn about his attitude... | (U:CONJ) I will keep going with my work and study.<br>I have learned about his attitude... | (R:ORTH) I will keep going with my work and study.<br>And I have learned about his attitude... |
 | M:OTHER | ...exist because of this drill.<br>Because U.S ask North not to... | (R:OTHER) ...exists because of this drill.<br>The U.S. asks North Korea not to... | (M:OTHER) ...exists because of this drill.<br>This is because the U.S. asks North Korea not to... |
 | M:OTHER | Committed mind and acceptance his mother like mom<br>is really different to me. | (M:DET) A committed mind and accepting his mother<br>like my own mom is really different for me. | (M:OTHER) Having a committed mind and accepting his mother<br>like my mom is really different for me. |
-
-
-
-print("\n--- Summary Metric Profile ---")
-print(df[['GLEU', 'PPL', 'F0.5']].round(4))
