@@ -1,5 +1,17 @@
 # Evaluating-Prompting-and-Fine-Tuning-Strategies
-# Appendix A — Prompt Examples
+
+# Appendix A - Metric Glossary
+
+This table provides a non-technical overview of the metrics used in this study to evaluate the performance of prompting versus fine-tuning strategies.
+
+| Metric | Technical Name | Pedagogical "Plain English" Meaning | Goal in this Study |
+| :--- | :--- | :--- | :--- |
+| **GLEU** | Google-BLEU | **Fidelity/Minimalism:** Measures how much of the student's original voice was preserved. | **Higher is better.** A high score indicates the model avoided unnecessary rewriting. |
+| **PPL** | Perplexity | **Fluency/Naturalness:** Measures how much the correction sounds like a natural English speaker. | **Lower is better.** High scores indicate the AI produced "gibberish" or awkward phrasing. |
+| **$F_{0.5}$** | F-Score ($\beta=0.5$) | **Precision/Reliability:** Ensures that when the AI makes a change, it is a correct and necessary one. | **Higher is better.** This weights precision over recall to penalize "over-correction." |
+| **ERRANT** | Error Annotation Toolkit | **Diagnostic Labels:** Categorizes the specific types of errors found (e.g., Verbs, Nouns, Punctuation). | **Categorization.** Used to analyze if the AI is focusing on the correct linguistic categories. |
+
+# Appendix B — Prompt Examples
 
 ## Simple Instructions Prompt
 
@@ -56,7 +68,89 @@ So I didn't want to miss this good chance.
 As I get high grades, it will be easy to achieve it among the competitors. 
 I also did my best this year to get a high level.
 
-# Appendix B — Correction Examples
+# Appendix C — Metric generation pipeline
+
+import pandas as pd
+import torch
+import errant
+from nltk.translate.gleu_score import sentence_gleu
+from transformers import GPT2LMHeadModel, GPT2TokenizerFast
+
+# 1. SETUP: Tools and Models
+annotator = errant.load('en')
+device = "cuda" if torch.cuda.is_available() else "cpu"
+# GPT-2 is the research standard for calculating zero-shot Perplexity
+ppl_model = GPT2LMHeadModel.from_pretrained("gpt2").to(device)
+ppl_tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
+
+# 2. DATA INPUT
+# 'best_model_out' = The FTComp Fine-tuned model
+# 'target_model_out' = The configuration being tested (e.g., 4o Simple)
+data = {
+    'original': ["I have learn about his attitude"],
+    'best_model_out': ["I have learned about his attitude"],
+    'target_model_out': ["I have learned about his attitude"]
+}
+df = pd.DataFrame(data)
+
+# 3. METRIC FUNCTIONS
+
+def get_ppl(text):
+    """Calculates Perplexity (Fluency). Lower is more natural."""
+    encodings = ppl_tokenizer(text, return_tensors="pt")
+    seq_len = encodings.input_ids.size(1)
+    with torch.no_grad():
+        outputs = ppl_model(encodings.input_ids.to(device), labels=encodings.input_ids.to(device))
+    return torch.exp(outputs.loss).item()
+
+def get_f05_and_edits(orig, ref, hyp):
+    """
+    Calculates F0.5 (Convergence with Best Model) and extracts atomic edits.
+    F0.5 weights Precision higher to penalize over-correction.
+    """
+    orig_p = annotator.parse(orig)
+    ref_p = annotator.parse(ref)
+    hyp_p = annotator.parse(hyp)
+    
+    gold_edits = annotator.annotate(orig_p, ref_p)
+    hyp_edits = annotator.annotate(orig_p, hyp_p)
+    
+    # Quantitative: F0.5 Calculation
+    gold_set = {(e.o_start, e.o_end, e.o_str, e.c_str) for e in gold_edits}
+    hyp_set = {(e.o_start, e.o_end, e.o_str, e.c_str) for e in hyp_edits}
+    
+    tp = len(gold_set.intersection(hyp_set))
+    fp = len(hyp_set - gold_set)
+    fn = len(gold_set - hyp_set)
+    
+    prec = tp / (tp + fp) if (tp + fp) > 0 else 0
+    rec = tp / (tp + fn) if (tp + fn) > 0 else 0
+    f05 = (1.25 * prec * rec) / (0.25 * prec + rec) if (0.25 * prec + rec) > 0 else 0
+    
+    # Qualitative: Atomic Edit Classification
+    edit_details = [{"type": e.type, "orig": e.o_str, "cor": e.c_str} for e in hyp_edits]
+    
+    return f05, edit_details
+
+# 4. EXECUTION
+print(f"{'Original':<20} | {'Type':<10} | {'Target Correction'}")
+print("-" * 55)
+
+for idx, row in df.iterrows():
+    # A. Minimalism (GLEU) - Target vs. Original
+    df.at[idx, 'GLEU'] = sentence_gleu([row['original'].split()], row['target_model_out'].split())
+    
+    # B. Fluency (PPL) - Target Output
+    df.at[idx, 'PPL'] = get_ppl(row['target_model_out'])
+    
+    # C. Convergence (F0.5) & Atomic Edits - Target vs. Pseudo-Gold
+    f05_score, edits = get_f05_and_edits(row['original'], row['best_model_out'], row['target_model_out'])
+    df.at[idx, 'F0.5'] = f05_score
+    
+    for e in edits:
+        print(f"{e['orig']:<20} | {e['type']:<10} | {e['cor']}")
+
+# Appendix D — Qualitative Examples
 
 | Edit Type | Original | 4oComp | FTComp |
 |----------|----------|--------|--------|
@@ -70,3 +164,8 @@ I also did my best this year to get a high level.
 | U:CONJ | I will keep going my work and study.<br>and I have learn about his attitude... | (U:CONJ) I will keep going with my work and study.<br>I have learned about his attitude... | (R:ORTH) I will keep going with my work and study.<br>And I have learned about his attitude... |
 | M:OTHER | ...exist because of this drill.<br>Because U.S ask North not to... | (R:OTHER) ...exists because of this drill.<br>The U.S. asks North Korea not to... | (M:OTHER) ...exists because of this drill.<br>This is because the U.S. asks North Korea not to... |
 | M:OTHER | Committed mind and acceptance his mother like mom<br>is really different to me. | (M:DET) A committed mind and accepting his mother<br>like my own mom is really different for me. | (M:OTHER) Having a committed mind and accepting his mother<br>like my mom is really different for me. |
+
+
+
+print("\n--- Summary Metric Profile ---")
+print(df[['GLEU', 'PPL', 'F0.5']].round(4))
