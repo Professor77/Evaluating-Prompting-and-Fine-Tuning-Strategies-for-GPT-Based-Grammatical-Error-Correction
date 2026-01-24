@@ -4,12 +4,12 @@
 
 This table provides a non-technical overview of the metrics used in this study to evaluate the performance of prompting versus fine-tuning strategies.
 
-| Metric | Technical Name | Pedagogical "Plain English" Meaning | Goal in this Study |
-| :--- | :--- | :--- | :--- |
-| **GLEU** | Google-BLEU | **Fidelity/Minimalism:** Measures how much of the student's original voice was preserved. | **Higher is better.** A high score indicates the model avoided unnecessary rewriting. |
-| **PPL** | Perplexity | **Fluency/Naturalness:** Measures how much the correction sounds like a natural English speaker. | **Lower is better.** High scores indicate the AI produced "gibberish" or awkward phrasing. |
-| **$F_{0.5}$** | F-Score ($\beta=0.5$) | **Precision/Reliability:** Ensures that when the AI makes a change, it is a correct and necessary one. | **Higher is better.** This weights precision over recall to penalize "over-correction." |
-| **ERRANT** | Error Annotation Toolkit | **Diagnostic Labels:** Categorizes the specific types of errors found (e.g., Verbs, Nouns, Punctuation). | **Categorization.** Used to analyze if the AI is focusing on the correct linguistic categories. |
+| Metric | Technical Name | Pedagogical "Plain English" Meaning | Goal in this Study | Example Case (Original: "He go to school yesterday.") |
+| :--- | :--- | :--- | :--- | :--- |
+| **GLEU** | Google-BLEU | **Fidelity/Minimalism:** Measures how much of the student's original voice was preserved (Self-similarity). | **Higher is better.** A high score indicates the model avoided unnecessary rewriting. | **Output:** "He went to school yesterday." (High GLEU: fixed verb, kept structure). <br>**Output:** "Yesterday, he traveled to classes." (Low GLEU: over-edited). |
+| **PPL** | Perplexity | **Fluency/Naturalness:** Measures how much the correction sounds like a natural English speaker. | **Lower is better.** High scores indicate the AI produced "gibberish" or awkward phrasing. | **Output:** "He went to school yesterday." (Low PPL: Very natural). <br>**Output:** "To school yesterday he gone." (High PPL: Unnatural syntax). |
+| **$F_{0.5}$** | F-Score ($\beta=0.5$) | **Precision/Reliability:** Ensures that when the AI makes a change, it is a correct and necessary one. | **Higher is better.** This weights precision over recall to penalize "over-correction." | **M2 Reference:** {go → went} <br>**Output:** {go → went} (High $F_{0.5}$: Match). <br>**Output:** {go → goes} (Low $F_{0.5}$: Incorrect edit per reference). |
+| **ERRANT** | Error Annotation Toolkit | **Diagnostic Labels:** Categorizes the specific types of errors found (e.g., Verbs, Nouns, Punctuation). | **Categorization.** Used to analyze if the AI is focusing on the correct linguistic categories. | **Edit:** {go → went} → **`VERB:TENSE`** <br>**Edit:** {go → goes} → **`VERB:SVA`** <br>**Edit:** {to school → school} → **`PREP`** |
 
 # Appendix B — Prompt Examples
 
